@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Coffee Cup Dilemma: An Interactive LCA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body {
+font-family: 'Inter', sans-serif;
+background-color: #f8fafc; 
+}
+.chart-container {
+position: relative;
+width: 100%;
+height: 45vh;
+max-height: 500px;
+}
+.section-title {
+font-size: 1.875rem; / text-3xl /
+font-weight: 700;
+color: #1e293b; / slate-800 /
+text-align: center;
+margin-bottom: 2rem;
+}
+.control-label {
+display: block;
+margin-bottom: 0.5rem;
+font-weight: 500;
+color: #475569; / slate-600 /
+}
+.param-card {
+background-color: white;
+padding: 1.5rem;
+border-radius: 0.75rem;
+box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+.takeaway-card {
+background-color: #e0f2fe; / sky-100 /
+border-left: 4px solid #0284c7; / sky-600 */
+padding: 1rem;
+border-radius: 0.5rem;
+}
+.bias-button {
+transition: all 0.2s ease-in-out;
+}
+.bias-button:hover {
+transform: translateY(-2px);
+}
+</style>
+</head>
+<body class="text-slate-700">
+
+<header class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-6 text-center">
+        <h1 class="text-4xl font-bold text-slate-800">The Coffee Cup Dilemma</h1>
+        <p class="mt-2 text-lg text-slate-600">An Interactive Lifecycle Assessment of Reusable vs. Disposable Cups</p>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 py-8 md:py-12">
+
+    <section id="interactive-dashboard" class="mb-16">
+         <p class="text-center max-w-3xl mx-auto mb-12 text-slate-600">
+            Which coffee cup is better for the environment? The answer is complex. It depends on the cup's entire lifecycle, from manufacturing to disposal, and crucially, on your habits. Use the controls below to explore different scenarios and see how the carbon footprint changes.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-8">
+                <div class="param-card">
+                    <h3 class="text-xl font-semibold text-slate-700 mb-4">Adjust Your Scenario</h3>
+                    <div>
+                        <label for="usesSlider" class="control-label">Reusable Cup Uses: <span id="usesValue" class="font-bold text-sky-600">50</span></label>
+                        <input type="range" id="usesSlider" min="1" max="200" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="mt-6">
+                         <label class="control-label">Paper Cup Transport (China to Germany)</label>
+                         <div class="flex flex-col space-y-2">
+                             <label class="inline-flex items-center"><input type="radio" name="transport" value="ocean" class="form-radio text-sky-600" checked> <span class="ml-2">🚢 Ocean Freight</span></label>
+                             <label class="inline-flex items-center"><input type="radio" name="transport" value="rail" class="form-radio text-sky-600"> <span class="ml-2">🚆 Rail Freight</span></label>
+                             <label class="inline-flex items-center"><input type="radio" name="transport" value="air" class="form-radio text-sky-600"> <span class="ml-2">✈️ Air Freight</span></label>
+                         </div>
+                    </div>
+                    <div class="mt-6">
+                         <label class="control-label">Reusable Cup Washing Method</label>
+                          <div class="flex flex-col space-y-2">
+                             <label class="inline-flex items-center"><input type="radio" name="washing" value="efficient" class="form-radio text-sky-600" checked> <span class="ml-2">🧼 Efficient (Commercial Dishwasher)</span></label>
+                             <label class="inline-flex items-center"><input type="radio" name="washing" value="inefficient" class="form-radio text-sky-600"> <span class="ml-2">💧 Inefficient (Hand Wash, running hot water)</span></label>
+                         </div>
+                    </div>
+                </div>
+
+                 <div id="takeaway" class="param-card bg-slate-800 text-white">
+                    <h3 class="text-xl font-semibold mb-4 text-sky-300">Key Takeaways</h3>
+                    <div class="space-y-3">
+                        <p>Break-even Point: <strong id="breakEven" class="text-amber-400">-- uses</strong></p>
+                        <p>Reusable Cup per Use: <strong id="reusableCost" class="text-amber-400">-- g CO₂e</strong></p>
+                        <p>Paper Cup per Use: <strong id="paperCost" class="text-amber-400">-- g CO₂e</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 param-card">
+                <div class="chart-container">
+                    <canvas id="cumulativeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="breakdown" class="mb-16">
+        <h2 class="section-title">Lifecycle CO₂e Breakdown (per use)</h2>
+        <p class="text-center max-w-3xl mx-auto mb-12 text-slate-600">
+           This chart shows where the carbon emissions come from for a single use in your selected scenario. For the reusable cup, the initial production and end-of-life impacts are amortized (spread out) over the number of uses you select.
+        </p>
+        <div class="chart-container max-w-4xl mx-auto">
+            <canvas id="breakdownChart"></canvas>
+        </div>
+    </section>
+
+    <section id="perspective">
+         <h2 class="section-title">Exploring Perspectives: How to Skew the Data</h2>
+        <p class="text-center max-w-3xl mx-auto mb-12 text-slate-600">
+           An environmental claim can be heavily influenced by the chosen assumptions. Click the buttons below to see how activists on either side might frame the debate to support their argument. This instantly adjusts the controls above.
+        </p>
+        <div class="flex flex-col md:flex-row justify-center gap-6">
+            <button id="makeReusableWorseBtn" class="bias-button w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+                Make Reusable Cups Look Worse
+            </button>
+             <button id="makePaperWorseBtn" class="bias-button w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+                Make Paper Cups Look Worse
+            </button>
+        </div>
+    </section>
+
+</main>
+
+<footer class="bg-slate-800 text-slate-400 mt-16">
+    <div class="container mx-auto px-4 py-6 text-center text-sm">
+        <p>&copy; 2025 Interactive LCA Demonstrator. Data is based on aggregated estimates for educational purposes.</p>
+    </div>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const emissionsData = {
+            reusable: {
+                production: 116.1,
+                transport: 0.5,
+                eol: 5.0,
+                washing: {
+                    efficient: 14.9,
+                    inefficient: 35.0 
+                }
+            },
+            paper: {
+                production: 25.0,
+                eol: 7.2, 
+                transport: {
+                    ocean: 3.22,
+                    rail: 1.24,
+                    air: 85.0
+                }
+            }
+        };
+
+        const usesSlider = document.getElementById('usesSlider');
+        const usesValue = document.getElementById('usesValue');
+        const transportRadios = document.querySelectorAll('input[name="transport"]');
+        const washingRadios = document.querySelectorAll('input[name="washing"]');
+        
+        const breakEvenEl = document.getElementById('breakEven');
+        const reusableCostEl = document.getElementById('reusableCost');
+        const paperCostEl = document.getElementById('paperCost');
+
+        const makeReusableWorseBtn = document.getElementById('makeReusableWorseBtn');
+        const makePaperWorseBtn = document.getElementById('makePaperWorseBtn');
+
+        const cumulativeCtx = document.getElementById('cumulativeChart').getContext('2d');
+        const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+        
+        let cumulativeChart, breakdownChart;
+
+        function initCharts() {
+            cumulativeChart = new Chart(cumulativeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Reusable Cup (CUPX) - Cumulative CO₂e',
+                            data: [],
+                            borderColor: '#0ea5e9', // sky-500
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true,
+                        },
+                        {
+                            label: 'Paper Cup (PB-based) - Cumulative CO₂e',
+                            data: [],
+                            borderColor: '#f97316', // orange-500
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Number of Uses' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Cumulative CO₂e (grams)' },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+
+            breakdownChart = new Chart(breakdownCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Production', 'Transport', 'Use Phase (Washing)', 'End of Life'],
+                    datasets: [
+                        {
+                            label: 'Reusable Cup (CUPX)',
+                            data: [],
+                            backgroundColor: '#38bdf8', // sky-400
+                        },
+                        {
+                            label: 'Paper Cup (PB-based)',
+                            data: [],
+                            backgroundColor: '#fb923c', // orange-400
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'CO₂e per Use (grams)' } }
+                    },
+                     plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(2) + ' g CO₂e';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateVisuals() {
+            const numUses = parseInt(usesSlider.value);
+            const transportMode = document.querySelector('input[name="transport"]:checked').value;
+            const washingMode = document.querySelector('input[name="washing"]:checked').value;
+
+            usesValue.textContent = numUses;
+
+            const reusableInitialCost = emissionsData.reusable.production + emissionsData.reusable.transport + emissionsData.reusable.eol;
+            const reusableWashingCost = emissionsData.reusable.washing[washingMode];
+            
+            const paperTransportCost = emissionsData.paper.transport[transportMode];
+            const paperPerUseCost = emissionsData.paper.production + paperTransportCost + emissionsData.paper.eol;
+
+            const labels = Array.from({ length: numUses }, (_, i) => i + 1);
+            const reusableCumulativeData = labels.map(use => reusableInitialCost + (reusableWashingCost * use));
+            const paperCumulativeData = labels.map(use => paperPerUseCost * use);
+
+            cumulativeChart.data.labels = labels;
+            cumulativeChart.data.datasets[0].data = reusableCumulativeData;
+            cumulativeChart.data.datasets[1].data = paperCumulativeData;
+            
+            let breakEven = 'N/A';
+            for (let i = 0; i < numUses; i++) {
+                if (reusableCumulativeData[i] <= paperCumulativeData[i]) {
+                    breakEven = `${i + 1} uses`;
+                    break;
+                }
+            }
+            
+            breakEvenEl.textContent = breakEven;
+
+            const reusablePerUseAmortized = (reusableInitialCost / numUses) + reusableWashingCost;
+            reusableCostEl.textContent = `${reusablePerUseAmortized.toFixed(2)} g CO₂e`;
+            paperCostEl.textContent = `${paperPerUseCost.toFixed(2)} g CO₂e`;
+            
+            cumulativeChart.update();
+            
+            updateBreakdownChart(numUses, transportMode, washingMode);
+        }
+        
+        function updateBreakdownChart(numUses, transportMode, washingMode) {
+             const reusableInitialCost = emissionsData.reusable.production + emissionsData.reusable.transport + emissionsData.reusable.eol;
+            
+            const reusableBreakdown = [
+                (emissionsData.reusable.production + emissionsData.reusable.transport) / numUses, // A1-A4 amortized
+                0, // Transport is part of production/EoL
+                emissionsData.reusable.washing[washingMode], // B6-B7
+                emissionsData.reusable.eol / numUses // C-stages amortized
+            ];
+            
+            const paperBreakdown = [
+                emissionsData.paper.production, // A1, A3
+                emissionsData.paper.transport[transportMode], // A2, A4
+                0, // No use phase cost
+                emissionsData.paper.eol // C-stages
+            ];
+
+            breakdownChart.data.datasets[0].data = reusableBreakdown;
+            breakdownChart.data.datasets[1].data = paperBreakdown;
+            breakdownChart.update();
+        }
+
+        function setScenario(uses, transport, washing) {
+            usesSlider.value = uses;
+            document.querySelector(`input[name="transport"][value="${transport}"]`).checked = true;
+            document.querySelector(`input[name="washing"][value="${washing}"]`).checked = true;
+            updateVisuals();
+        }
+
+        makeReusableWorseBtn.addEventListener('click', () => {
+            setScenario(15, 'rail', 'inefficient');
+        });
+        
+        makePaperWorseBtn.addEventListener('click', () => {
+            setScenario(150, 'air', 'efficient');
+        });
+
+        usesSlider.addEventListener('input', updateVisuals);
+        transportRadios.forEach(radio => radio.addEventListener('change', updateVisuals));
+        washingRadios.forEach(radio => radio.addEventListener('change', updateVisuals));
+
+        initCharts();
+        updateVisuals();
+    });
+</script>
+</body>
+</html>
